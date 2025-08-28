@@ -108,10 +108,24 @@ def api_produtos():
     conn = sqlite3.connect("database.db")
     cur = conn.cursor()
     cur.execute("SELECT id, nome, preco, descricao, moeda, imagem FROM produtos")
-    produtos = [
-        {"id": r[0], "nome": r[1], "preco": r[2], "descricao": r[3], "moeda": r[4], "imagem": r[5]}
-        for r in cur.fetchall()
-    ]
+    
+    produtos = []
+    for r in cur.fetchall():
+        # 🔑 Monta URL completa da imagem se existir
+        if r[5]:
+            img_url = f"https://SEU-PAINEL.onrender.com/static/uploads/{r[5]}"
+        else:
+            img_url = None
+
+        produtos.append({
+            "id": r[0],
+            "nome": r[1],
+            "preco": r[2],
+            "descricao": r[3],
+            "moeda": r[4],
+            "imagem": img_url
+        })
+
     conn.close()
     return jsonify(produtos)
 
