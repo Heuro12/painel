@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel de Administração</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</head>
+<body>
+    <h1>Painel de Administração</h1>
+
+    <form action="{{ url_for('painel') }}" method="POST" enctype="multipart/form-data">
+        <input type="text" name="nome" placeholder="Nome do produto" required>
+        <input type="number" step="0.01" name="preco" placeholder="Preço" required>
+        <textarea name="descricao" placeholder="Descrição"></textarea>
+
+        <!-- Moeda via geolocalização -->
+        <select name="moeda" id="moeda">
+            <option value="USD">USD - Dólar</option>
+            <option value="EUR">EUR - Euro</option>
+            <option value="BRL">BRL - Real</option>
+            <option value="AOA">AOA - Kwanza</option>
+        </select>
+
+        <!-- Upload de imagem -->
+        <input type="file" name="imagem" accept="image/*">
+
+        <button type="submit">Cadastrar Produto</button>
+    </form>
+
+    <h2>Produtos cadastrados</h2>
+    <div class="produtos">
+        {% for p in produtos %}
+        <div class="produto">
+            <h3>{{ p[1] }} ({{ p[2] }} {{ p[3] }})</h3>
+            <p>{{ p[4] }}</p>
+            {% if p[5] %}
+                <img src="{{ url_for('static', filename='uploads/' + p[5]) }}" width="150">
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
