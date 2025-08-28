@@ -113,7 +113,7 @@ def api_produtos():
     for r in cur.fetchall():
         # 🔑 Monta URL completa da imagem se existir
         if r[5]:
-            img_url = f"https://SEU-PAINEL.onrender.com/static/uploads/{r[5]}"
+            img_url = f"https://painel-ly5m.onrender.com/static/uploads/{r[5]}"
         else:
             img_url = None
 
