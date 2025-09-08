@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
-import sqlite3, os
+import psycopg2, os
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -19,14 +19,17 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 # ======================
-# BANCO DE DADOS
+# BANCO DE DADOS (PostgreSQL)
 # ======================
+def get_db_connection():
+    return psycopg2.connect(os.environ["DATABASE_URL"], sslmode="require")
+
 def init_db():
-    conn = sqlite3.connect("database.db")
+    conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("""
     CREATE TABLE IF NOT EXISTS produtos (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         nome TEXT NOT NULL,
         preco REAL NOT NULL,
         descricao TEXT,
@@ -35,6 +38,7 @@ def init_db():
     )
     """)
     conn.commit()
+    cur.close()
     conn.close()
 
 init_db()
@@ -84,18 +88,22 @@ def painel():
                 file.save(filepath)
                 imagem = filename
 
-        conn = sqlite3.connect("database.db")
+        conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute("INSERT INTO produtos (nome, preco, descricao, moeda, imagem) VALUES (?, ?, ?, ?, ?)",
-                    (nome, preco, descricao, moeda, imagem))
+        cur.execute(
+            "INSERT INTO produtos (nome, preco, descricao, moeda, imagem) VALUES (%s, %s, %s, %s, %s)",
+            (nome, preco, descricao, moeda, imagem)
+        )
         conn.commit()
+        cur.close()
         conn.close()
 
     # Listar produtos cadastrados
-    conn = sqlite3.connect("database.db")
+    conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("SELECT id, nome, preco, descricao, moeda, imagem FROM produtos")
     produtos = cur.fetchall()
+    cur.close()
     conn.close()
 
     return render_template("painel.html", produtos=produtos)
@@ -105,13 +113,12 @@ def painel():
 # ======================
 @app.route("/api/produtos")
 def api_produtos():
-    conn = sqlite3.connect("database.db")
+    conn = get_db_connection()
     cur = conn.cursor()
     cur.execute("SELECT id, nome, preco, descricao, moeda, imagem FROM produtos")
-    
+
     produtos = []
     for r in cur.fetchall():
-        # 🔑 Monta URL completa da imagem se existir
         if r[5]:
             img_url = f"https://painel-ly5m.onrender.com/static/uploads/{r[5]}"
         else:
@@ -126,6 +133,7 @@ def api_produtos():
             "imagem": img_url
         })
 
+    cur.close()
     conn.close()
     return jsonify(produtos)
 
@@ -133,5 +141,5 @@ def api_produtos():
 # MAIN
 # ======================
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))  # Render define a porta na variável de ambiente
+    port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
